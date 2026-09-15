@@ -1,0 +1,45 @@
+name: Build CepArazi APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Create Android platform
+        run: flutter create --platforms=android --org com.ceparazi --project-name ceparazi .
+      - name: Configure permissions and Google Maps key
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/src/main/AndroidManifest.xml')
+          s=p.read_text()
+          s=s.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">','<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>\n    <uses-permission android:name="android.permission.INTERNET"/>')
+          marker='''        <meta-data\n            android:name="com.google.android.geo.API_KEY"\n            android:value="__MAPS_API_KEY__"/>\n'''
+          s=s.replace('    </application>', marker+'    </application>')
+          p.write_text(s)
+          PY
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p=Path('android/app/src/main/AndroidManifest.xml')
+          s=p.read_text().replace('__MAPS_API_KEY__', os.environ.get('MAPS_API_KEY',''))
+          p.write_text(s)
+          PY
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CepArazi-APK
+          path: build/app/outputs/flutter-apk/app-release.apk

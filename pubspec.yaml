@@ -1,0 +1,16 @@
+name: ceparazi
+description: Arazi aplikasyon ve nokta alim uygulamasi
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_maps_flutter: ^2.12.3
+  geolocator: ^14.0.2
+
+flutter:
+  uses-material-design: true

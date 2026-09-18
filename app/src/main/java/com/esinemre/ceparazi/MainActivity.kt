@@ -30,6 +30,7 @@ class MainActivity : ComponentActivity() {
         setContent { MaterialTheme { CeparaziApp() } }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("MissingPermission")
     @Composable
     private fun CeparaziApp() {
@@ -69,11 +70,11 @@ class MainActivity : ComponentActivity() {
             topBar = { TopAppBar(title = { Text("CepArazi") }, actions = { AccuracyBadge(loc?.accuracy) }) },
             bottomBar = {
                 NavigationBar {
-                    fun nav(s:Screen,label:String,icon:String) = NavigationBarItem(
-                        selected=screen==s,onClick={screen=s},icon={Text(icon)},label={Text(label)}
-                    )
-                    nav(Screen.MAP,"Harita","⌖"); nav(Screen.STAKEOUT,"Aplikasyon","➤")
-                    nav(Screen.POINTS,"Noktalar","●"); nav(Screen.DRAW,"Çizim","✎"); nav(Screen.FILES,"Dosya","▣")
+                    NavigationBarItem(screen==Screen.MAP,{screen=Screen.MAP},{Text("⌖")},label={Text("Harita")})
+                    NavigationBarItem(screen==Screen.STAKEOUT,{screen=Screen.STAKEOUT},{Text("➤")},label={Text("Aplikasyon")})
+                    NavigationBarItem(screen==Screen.POINTS,{screen=Screen.POINTS},{Text("●")},label={Text("Noktalar")})
+                    NavigationBarItem(screen==Screen.DRAW,{screen=Screen.DRAW},{Text("✎")},label={Text("Çizim")})
+                    NavigationBarItem(screen==Screen.FILES,{screen=Screen.FILES},{Text("▣")},label={Text("Dosya")})
                 }
             }
         ) { pad ->

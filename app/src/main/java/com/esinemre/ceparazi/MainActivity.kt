@@ -17,7 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.dp\nimport androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import kotlin.math.*
@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
         val grid = loc?.let { wgs84ToUtm(it.latitude,it.longitude) }
         Scaffold(topBar={ TopAppBar(title={Text("CepArazi • Aplikasyon")}) }) { pad ->
             Column(Modifier.padding(pad).padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                Text("GNSS Konumu", style=MaterialTheme.typography.titleMedium)
+                SectionTitle("Saha Konumu")\n                AccuracyBadge(loc?.accuracy)
                 Text(if(loc==null) "Konum bekleniyor…" else "Enlem: %.8f
 Boylam: %.8f
 Doğruluk: ±%.1f m".format(loc!!.latitude,loc!!.longitude,loc!!.accuracy))
@@ -80,11 +80,11 @@ X (N): %.3f m".format(it.easting,it.northing)) }
                         }}
                     }
                 }
-                HorizontalDivider(); Text("Hedef Nokta", style=MaterialTheme.typography.titleMedium)
+                HorizontalDivider(); SectionTitle("Hedef / Aplikasyon")
                 OutlinedTextField(targetLat,{targetLat=it},label={Text("Enlem")},modifier=Modifier.fillMaxWidth())
                 OutlinedTextField(targetLon,{targetLon=it},label={Text("Boylam")},modifier=Modifier.fillMaxWidth())
                 if(result!=null) Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
-                    Text("APLİKASYON", style=MaterialTheme.typography.titleMedium)
+                    Text("APLİKASYON", style=MaterialTheme.typography.titleMedium, fontWeight=androidx.compose.ui.text.font.FontWeight.Bold)
                     Text("Mesafe: %.3f m".format(result.first)); Text("Azimut: %.4f°".format(result.second))
                     val br=Math.toRadians(result.second); Text("ΔX (Kuzey): %+.3f m".format(result.first*kotlin.math.cos(br))); Text("ΔY (Doğu): %+.3f m".format(result.first*kotlin.math.sin(br)))
                 }}

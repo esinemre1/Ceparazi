@@ -1,1 +1,22 @@
-# CepArazi Native Kotlin\n\nDart/Flutter bağımlılığı olmayan Android aplikasyon sürümü.\n\n## Şu an\n- Kotlin + Jetpack Compose\n- GNSS konumu ve doğruluk\n- WGS84 → UTM, otomatik zon ve DOM\n- Aplikasyon mesafe, azimut, ΔX/ΔY\n- GitHub Actions APK build\n\n## Sonraki\nRTK Bluetooth/NMEA, ITRF/TUREF-ED50, uydu haritası, nokta kayıtları, DXF/KML/GeoJSON.\n\nTelefon GNSS'i kadastro hassasiyetinde kabul edilmemelidir; profesyonel aplikasyon için RTK kullanılmalıdır.\n
+# CepArazi Native Kotlin
+
+Basit ve stabil Android arazi uygulaması. Flutter/Dart kullanılmaz.
+
+## Mevcut aşama
+- Kotlin + Jetpack Compose
+- 5 ekranlı alt menü: Harita / Aplikasyon / Noktalar / Çizim / Dosya
+- Telefon GNSS konumu ve doğruluk göstergesi
+- NCN içe/dışa aktarma
+- NCN nokta listesi ve hedef seçimi
+- Basit Çizgi / Poligon arayüzü
+- Aplikasyon hedef akışı
+- GitHub Actions ile debug APK derleme altyapısı
+
+## Bilerek henüz tamamlanmayanlar
+- Gerçek harita SDK katmanı (uydu/normal)
+- Harita üzerinde dokunarak çizgi/poligon köşesi verme
+- TUREF/ITRF 3° TM / DOM dönüşüm motoru
+- Sürekli canlı GNSS güncellemesi
+- Proje/nokta/çizim kalıcı veritabanı
+
+> Telefon GNSS'i kadastro hassasiyetinde kabul edilmez. Uygulama GNSS doğruluğunu kullanıcıya açıkça gösterir.

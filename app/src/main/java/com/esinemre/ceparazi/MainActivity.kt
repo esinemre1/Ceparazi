@@ -5,11 +5,15 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
+import android.net.Uri
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -24,28 +28,67 @@ class MainActivity : ComponentActivity() {
     @Composable fun CeparaziApp() {
         var loc by remember { mutableStateOf<Location?>(null) }
         var targetLat by remember { mutableStateOf("") }; var targetLon by remember { mutableStateOf("") }
+        var ncnPoints by remember { mutableStateOf<List<SurveyPoint>>(emptyList()) }
+        var ncnStatus by remember { mutableStateOf("NCN dosyası yüklenmedi") }
         val fused = remember { LocationServices.getFusedLocationProviderClient(this) }
         fun readLocation() { fused.lastLocation.addOnSuccessListener { loc = it } }
         val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if(it) readLocation() }
+        val openNcn = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            uri?.let {
+                runCatching {
+                    contentResolver.openInputStream(it)?.use { input -> NcnCodec.parse(input.readBytes()) } ?: emptyList()
+                }.onSuccess { pts -> ncnPoints=pts; ncnStatus="${pts.size} nokta okundu" }
+                 .onFailure { e -> ncnStatus="NCN okuma hatası: ${e.message ?: "bilinmeyen hata"}" }
+            }
+        }
+        val saveNcn = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri: Uri? ->
+            uri?.let {
+                runCatching { contentResolver.openOutputStream(it)?.use { out -> out.write(NcnCodec.export(ncnPoints)) } }
+                    .onSuccess { ncnStatus="${ncnPoints.size} nokta NCN olarak kaydedildi" }
+                    .onFailure { e -> ncnStatus="NCN kayıt hatası: ${e.message ?: "bilinmeyen hata"}" }
+            }
+        }
         LaunchedEffect(Unit) {
             if(ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED) readLocation()
             else permission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
         val target = targetLat.toDoubleOrNull()?.let { a -> targetLon.toDoubleOrNull()?.let { b -> a to b } }
-        val result = if(loc != null && target != null) stakeout(loc!!.latitude,loc!!.longitude,target.first,target.second) else null\n        val grid = loc?.let { wgs84ToUtm(it.latitude,it.longitude) }
+        val result = if(loc != null && target != null) stakeout(loc!!.latitude,loc!!.longitude,target.first,target.second) else null
+        val grid = loc?.let { wgs84ToUtm(it.latitude,it.longitude) }
         Scaffold(topBar={ TopAppBar(title={Text("CepArazi • Aplikasyon")}) }) { pad ->
             Column(Modifier.padding(pad).padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
                 Text("GNSS Konumu", style=MaterialTheme.typography.titleMedium)
-                Text(if(loc==null) "Konum bekleniyor…" else "Enlem: %.8f\nBoylam: %.8f\nDoğruluk: ±%.1f m".format(loc!!.latitude,loc!!.longitude,loc!!.accuracy))
-                Button(onClick={readLocation()}, modifier=Modifier.fillMaxWidth()){Text("Konumu Yenile")}\n                grid?.let { Text("UTM Zon: ${it.zone}N • DOM: ${it.dom}°\\nY (E): %.3f m\\nX (N): %.3f m".format(it.easting,it.northing)) }
+                Text(if(loc==null) "Konum bekleniyor…" else "Enlem: %.8f
+Boylam: %.8f
+Doğruluk: ±%.1f m".format(loc!!.latitude,loc!!.longitude,loc!!.accuracy))
+                Button(onClick={readLocation()}, modifier=Modifier.fillMaxWidth()){Text("Konumu Yenile")}
+                grid?.let { Text("UTM Zon: ${it.zone}N • DOM: ${it.dom}°\
+Y (E): %.3f m\
+X (N): %.3f m".format(it.easting,it.northing)) }
+                HorizontalDivider()
+                Text("NCN Nokta Dosyası", style=MaterialTheme.typography.titleMedium)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Button(onClick={openNcn.launch(arrayOf("*/*"))}, modifier=Modifier.weight(1f)){Text("NCN Aç")}
+                    OutlinedButton(onClick={saveNcn.launch("ceparazi_noktalar.ncn")}, enabled=ncnPoints.isNotEmpty(), modifier=Modifier.weight(1f)){Text("NCN Kaydet")}
+                }
+                Text(ncnStatus)
+                if(ncnPoints.isNotEmpty()) {
+                    Text("İlk noktalar:", style=MaterialTheme.typography.labelLarge)
+                    ncnPoints.take(5).forEach { p ->
+                        Card(Modifier.fillMaxWidth()) { Row(Modifier.padding(10.dp), horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                            Text(p.name, modifier=Modifier.width(70.dp)); Text("Y %.3f   X %.3f".format(p.y,p.x))
+                        }}
+                    }
+                }
                 HorizontalDivider(); Text("Hedef Nokta", style=MaterialTheme.typography.titleMedium)
                 OutlinedTextField(targetLat,{targetLat=it},label={Text("Enlem")},modifier=Modifier.fillMaxWidth())
                 OutlinedTextField(targetLon,{targetLon=it},label={Text("Boylam")},modifier=Modifier.fillMaxWidth())
                 if(result!=null) Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
                     Text("APLİKASYON", style=MaterialTheme.typography.titleMedium)
-                    Text("Mesafe: %.3f m".format(result.first)); Text("Azimut: %.4f°".format(result.second))\n                    val br=Math.toRadians(result.second); Text("ΔX (Kuzey): %+.3f m".format(result.first*kotlin.math.cos(br))); Text("ΔY (Doğu): %+.3f m".format(result.first*kotlin.math.sin(br)))
+                    Text("Mesafe: %.3f m".format(result.first)); Text("Azimut: %.4f°".format(result.second))
+                    val br=Math.toRadians(result.second); Text("ΔX (Kuzey): %+.3f m".format(result.first*kotlin.math.cos(br))); Text("ΔY (Doğu): %+.3f m".format(result.first*kotlin.math.sin(br)))
                 }}
-                Text("V2 temel sürüm • Sonraki: ITRF/ED50, DOM, DXF/KML ve RTK/NMEA")
+                Text("V2 • Telefon GNSS • UTM/DOM • NCN içe/dışa aktarma")
             }
         }
     }

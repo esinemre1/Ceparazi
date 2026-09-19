@@ -1,7 +1,7 @@
 name: Build Kotlin APK
 on:
   push:
-    branches: [ kotlin-native ]
+    branches: [ main ]
   workflow_dispatch:
 jobs:
   build:
